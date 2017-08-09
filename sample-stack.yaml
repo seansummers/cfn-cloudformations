@@ -1,0 +1,10 @@
+--- # sample-stack.yaml
+Resources:
+  MySAMLProvider:
+    Type: Custom::SamlProvider
+    Version: 1.0
+    Properties:
+      ServiceToken: !ImportValue 'Custom::SamlProvider'
+      SAMLMetadata: https://someprovider/Metadata.xml
+      # Name: NotMySAMLProvider
+...

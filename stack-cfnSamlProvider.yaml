@@ -1,0 +1,106 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Conditions:
+  NeedIam:
+    Fn::Equals:
+    - ''
+    - Ref: LambdaRoleArn
+Description: Custom::SamlProvider for CloudFormation
+Metadata:
+  AWS::CloudFormation::Interface:
+    ParameterGroups:
+    - Label:
+        default: Environment Settings
+      Parameters:
+      - LogRetentionInDays
+      - LambdaRoleArn
+    ParameterLabels:
+      LambdaRoleArn:
+        default: Lambda Role
+      LogRetentionInDays:
+        default: CloudWatch log retention
+Parameters:
+  LambdaRoleArn:
+    Default: ''
+    Description: 'arn:aws:iam:'
+    Type: String
+  LogRetentionInDays:
+    AllowedValues:
+    - 1
+    - 3
+    - 5
+    - 7
+    - 14
+    - 30
+    - 60
+    - 90
+    - 120
+    - 150
+    - 180
+    - 365
+    - 400
+    - 545
+    - 731
+    - 1827
+    - 3653
+    Default: 90
+    Description: days
+    Type: Number
+Resources:
+  Lambda:
+    Properties:
+      Parameters:
+        LambdaRoleArn:
+          Fn::If:
+          - NeedIam
+          - Fn::GetAtt:
+            - Role
+            - Arn
+          - Ref: LambdaRoleArn
+        LogRetentionInDays:
+          Ref: LogRetentionInDays
+      TemplateURL: https://s3.amazonaws.com/testlibnd-cf/ssummer3/lambda/cfn/cf2a49cce4a0d997047537d23161abfc.template
+    Type: AWS::CloudFormation::Stack
+  LoggingPolicy:
+    Condition: NeedIam
+    Properties:
+      Path: /service-role/CloudFormationResource/
+      PolicyDocument:
+        Statement:
+        - Action: logs:*
+          Effect: Deny
+          NotResource:
+            Fn::GetAtt:
+            - Lambda
+            - Outputs.ArnLogGroup
+        Version: '2012-10-17'
+      Roles:
+      - Ref: Role
+    Type: AWS::IAM::ManagedPolicy
+  Role:
+    Condition: NeedIam
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+        - Action: sts:AssumeRole
+          Effect: Allow
+          Principal:
+            Service: lambda.amazonaws.com
+        Version: '2012-10-17'
+      ManagedPolicyArns:
+      - arn:aws:iam::aws:policy/CloudWatchLogsFullAccess
+      Path: /service-role/CloudFormationResource/
+      Policies:
+      - PolicyDocument:
+          Statement:
+          - Action:
+            - iam:ListSAMLProviders
+            - iam:GetSAMLProvider
+            - iam:CreateSAMLProvider
+            - iam:UpdateSAMLProvider
+            - iam:DeleteSAMLProvider
+            Effect: Allow
+            Resource: '*'
+            Sid: ManageSAMLProvider
+          Version: '2012-10-17'
+        PolicyName: SamlProvider
+    Type: AWS::IAM::Role

@@ -1,0 +1,75 @@
+---
+AWSTemplateFormatVersion: '2010-09-09'
+
+
+Description: Custom::SamlProvider Lambda
+
+
+Metadata:
+
+  AWS::CloudFormation::Interface:
+
+    ParameterGroups:
+      - Label: {default: Environment Settings}
+        Parameters:
+          - LogRetentionInDays
+          - LambdaRoleArn
+
+    ParameterLabels:
+      LogRetentionInDays: {default: CloudWatch log retention}
+      LambdaRoleArn: {default: Lambda Role (must have }
+
+
+Parameters:
+
+  LambdaRoleArn:
+    Type: String
+    Description: 'arn:aws:iam:'
+
+  LogRetentionInDays:
+    Type: Number
+    Description: days
+    AllowedValues: [1, 3, 5, 7, 14, 30, 60, 90, 120, 150, 180, 365, 400, 545, 731, 1827, 3653]
+    Default: 90
+
+
+Outputs:
+
+  ConsoleLambda:
+    Value: !Sub 'https://console.aws.amazon.com/lambda/home?region=${AWS::Region}#/functions/${Function}'
+
+  ConsoleLogs:
+    Value: !Sub 'https://console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logStream:group=${LogGroup}'
+
+  ArnLogGroup:
+    Value: !GetAtt LogGroup.Arn
+
+  ArnFunction:
+    Value: !GetAtt Function.Arn
+    Export: {Name: 'Custom::SamlProvider'}
+
+
+Resources:
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: !Sub /aws/lambda/${Function}
+      RetentionInDays: !Ref LogRetentionInDays
+
+  Function:
+    Metadata:
+      LogicalResourceId:
+        Type: Custom::SamlProvider
+        Version: 1.0
+        Properties:
+          ServiceToken: <This LambdaArn>
+          SAMLMetadata: <SAML Metadata Document or URL> (required)
+          Name: <SAML Provider Name> (optional)
+    Type: AWS::Lambda::Function
+    Properties: 
+      Description: 'Custom::SamlProvider'
+      Role: !Ref LambdaRoleArn
+      Handler: index.handler
+      Runtime: python3.6
+      Code: .
