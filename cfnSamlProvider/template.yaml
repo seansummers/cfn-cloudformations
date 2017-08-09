@@ -17,7 +17,7 @@ Metadata:
 
     ParameterLabels:
       LogRetentionInDays: {default: CloudWatch log retention}
-      LambdaRoleArn: {default: Lambda Role (must have }
+      LambdaRoleArn: {default: 'Lambda Role (needs iam:*SAML*)'}
 
 
 Parameters:
